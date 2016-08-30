@@ -607,16 +607,3 @@ class ImageFrame extends JFrame {
 		this.validate();
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
