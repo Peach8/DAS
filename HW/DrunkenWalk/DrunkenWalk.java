@@ -81,7 +81,7 @@ class ImageFrame extends JFrame {
 				public void actionPerformed(ActionEvent event) {
 					int numSteps = promptForSteps(); // get number of steps from user
 					image = new BufferedImage(imgWIDTH, imgHEIGHT, BufferedImage.TYPE_INT_ARGB); // construct image for drunken walk simulation
-					infinitePlaneWalkVN(image, numSteps); // simulate drunken walk on infinite plane using von Neumann neighborhood
+					drunkenWalk(image, numSteps, 0, 0); // simulate drunken walk on infinite plane using von Neumann neighborhood
 					displayBufferedImage(image); // display final image		
 				}
 			}	);
@@ -96,7 +96,7 @@ class ImageFrame extends JFrame {
 				public void actionPerformed(ActionEvent event) {
 					int numSteps = promptForSteps(); // get number of steps from user
 					image = new BufferedImage(imgWIDTH, imgHEIGHT, BufferedImage.TYPE_INT_ARGB); // construct image for drunken walk simulation
-					boundedPlaneWalkVN(image, numSteps); // simulate drunken walk on bounded plane using von Neumann neighborhood
+					drunkenWalk(image, numSteps, 0, 1); // simulate drunken walk on bounded plane using von Neumann neighborhood
 					displayBufferedImage(image); // display final image		
 				}
 			}	);
@@ -111,7 +111,7 @@ class ImageFrame extends JFrame {
 				public void actionPerformed(ActionEvent event) {
 					int numSteps = promptForSteps(); // get number of steps from user
 					image = new BufferedImage(imgWIDTH, imgHEIGHT, BufferedImage.TYPE_INT_ARGB); // construct image for drunken walk simulation
-					toroidalPlaneWalkVN(image, numSteps); // simulate drunken walk on toroidal plane using von Neumann neighborhood
+					drunkenWalk(image, numSteps, 0, 2); // simulate drunken walk on toroidal plane using von Neumann neighborhood
 					displayBufferedImage(image); // display final image						
 				}
 			}	);
@@ -130,7 +130,7 @@ class ImageFrame extends JFrame {
 				public void actionPerformed(ActionEvent event) {
 					int numSteps = promptForSteps(); // get number of steps from user
 					image = new BufferedImage(imgWIDTH, imgHEIGHT, BufferedImage.TYPE_INT_ARGB); // construct image for drunken walk simulation
-					infinitePlaneWalkM(image, numSteps); // simulate drunken walk on infinite plane using Moore neighborhood
+					drunkenWalk(image, numSteps, 1, 0); // simulate drunken walk on infinite plane using Moore neighborhood
 					displayBufferedImage(image); // display final image		
 				}
 			}	);
@@ -145,7 +145,7 @@ class ImageFrame extends JFrame {
 				public void actionPerformed(ActionEvent event) {
 					int numSteps = promptForSteps(); // get number of steps from user
 					image = new BufferedImage(imgWIDTH, imgHEIGHT, BufferedImage.TYPE_INT_ARGB); // construct image for drunken walk simulation
-					boundedPlaneWalkM(image, numSteps); // simulate drunken walk on bounded plane using Moore neighborhood
+					drunkenWalk(image, numSteps, 1, 1); // simulate drunken walk on bounded plane using Moore neighborhood
 					displayBufferedImage(image); // display final image		
 				}
 			}	);
@@ -160,7 +160,7 @@ class ImageFrame extends JFrame {
 				public void actionPerformed(ActionEvent event) {
 					int numSteps = promptForSteps(); // get number of steps from user
 					image = new BufferedImage(imgWIDTH, imgHEIGHT, BufferedImage.TYPE_INT_ARGB); // construct image for drunken walk simulation
-					toroidalPlaneWalkM(image, numSteps); // simulate drunken walk on toroidal plane using Moore neighborhood
+					drunkenWalk(image, numSteps, 1, 2); // simulate drunken walk on toroidal plane using Moore neighborhood
 					displayBufferedImage(image); // display final image						
 				}
 			}	);
@@ -197,9 +197,22 @@ class ImageFrame extends JFrame {
 	}
 
 	// ---------------------------------------------------------
-	// infinitePlaneWalkVN() - simulation of drunken walk on an infinite plane using von Neumann neighborhood
+	// drunkenWalk() - simulation of drunken walk using a
+	//				   - von Neumann neighborhood or
+	//				   - Moore neighborhood
+	//					 on
+	// 				     - an infinite plane,
+	//				     - a bounded plane, or
+	//  			     - a toroidal plane, 
 
-	private void infinitePlaneWalkVN(BufferedImage image, int numSteps) {
+	// params:
+	// - BufferedImage image: image on which to display drunken walk sequence
+	// - int numSteps: number of steps in drunken walk
+	// - int neighborhood: 0 = von Neumann, 1 = Moore
+	// - int topology: 0 = infinite plane, 1 = bounded plane, 2 = toroidal plane
+
+
+	private void drunkenWalk(BufferedImage image, int numSteps, int neighborhood, int topology) {
 		// fill background with cream color
 		for (int i = 0; i < imgWIDTH; i++) {
 			for (int j = 0; j < imgHEIGHT; j++) {
@@ -211,6 +224,8 @@ class ImageFrame extends JFrame {
 		int startPosy = imgHEIGHT/2; // define starting y pos
 		int currPosx; // var to store current x pos during walk
 		int currPosy; // var to store current y pos during walk
+
+		int stepColor = BLACK; // every step will be black, except the last step will be red
 
 		Random rand = new Random(); // create new Random object for generating walk sequence
 
@@ -220,7 +235,18 @@ class ImageFrame extends JFrame {
 				currPosx = startPosx; // define current pos
 				currPosy = startPosy; // @ start pos
 				for (int i = 2; i <= numSteps; i++) {
-					int step = rand.nextInt(4); // step ϵ [0,4)
+					if (i == numSteps) {
+						stepColor = RED;
+					}
+					int step = 0; // initialize step to 0 before generating rand val
+					switch (neighborhood) {
+						case 0: // von Neumann
+								step = rand.nextInt(4); // step ϵ [0,4)
+								break;
+						case 1: // Moore
+								step = rand.nextInt(8); // step ϵ [0,8)
+								break;						
+					}
 					switch (step) {
 						case 0: currPosy++; // move down 1 pixel
 								break;
@@ -230,367 +256,64 @@ class ImageFrame extends JFrame {
 								break;
 						case 3: currPosx++; // move right 1 pixel
 								break;
-					}
-
-					// let the drunk walk outside/through the boundaries,
-					// but only mark steps made inside the 401 x 401 window
-					if ((currPosx >= 0) && (currPosx < imgWIDTH)) {
-						if ((currPosy >= 0) && (currPosy < imgHEIGHT)) {
-							if (i == numSteps) {
-								// mark the pos where the drunk falls down (last step) with red
-								image.setRGB(currPosx, currPosy, RED);
-							}
-							else {
-								// mark all other steps with black
-								image.setRGB(currPosx, currPosy, BLACK);
-							}							
-						}	
-					}
-				}
-			}
-		}
-	}
-
-	// ---------------------------------------------------------
-	// boundedPlaneWalkVN() - simulation of drunken walk on a bounded plane using von Neumann neighborhood
-
-	private void boundedPlaneWalkVN(BufferedImage image, int numSteps) {
-		// fill background with cream color
-		for (int i = 0; i < imgWIDTH; i++) {
-			for (int j = 0; j < imgHEIGHT; j++) {
-				image.setRGB(i, j, CREAM);
-			}
-		}
-
-		int startPosx = imgWIDTH/2;  // define starting x pos
-		int startPosy = imgHEIGHT/2; // define starting y pos
-		int currPosx; // var to store current x pos during walk
-		int currPosy; // var to store current y pos during walk
-
-		Random rand = new Random(); // create new Random object for generating walk sequence
-
-		if (numSteps > 0) { // if numSteps = 0, only the cream background will be displayed
-			image.setRGB(startPosx, startPosy, BLACK);
-			if (numSteps > 1) {
-				currPosx = startPosx; // define current pos
-				currPosy = startPosy; // @ start pos
-				for (int i = 2; i <= numSteps; i++) {
-					int step = rand.nextInt(4); // step ϵ [0,4)
-					switch (step) {
-						case 0: currPosy++; // move down 1 pixel
-								break;
-						case 1: currPosx--; // move left 1 pixel
-								break;
-						case 2: currPosy--; // move up 1 pixel
-								break;
-						case 3: currPosx++; // move right 1 pixel
-								break;
-					}
-
-					// don't let the drunk walk outside/through the boundaries
-					// instead, make him "bounce off the walls"
-					if (currPosx == imgWIDTH) {
-						currPosx = imgWIDTH-1;
-					}
-					else if (currPosx < 0) {
-						currPosx = 0;
-					}
-					if (currPosy == imgHEIGHT) {
-						currPosy = imgHEIGHT-1;
-					}
-					else if (currPosy < 0) {
-						currPosy = 0;
-					}
-
-					if (i == numSteps) {
-						// mark the pos where the drunk falls down (last step) with red
-						image.setRGB(currPosx, currPosy, RED);
-					}
-					else {
-						// mark all other steps with black
-						image.setRGB(currPosx, currPosy, BLACK);
-					}
-				}
-			}
-		}
-	}
-
-	// ---------------------------------------------------------
-	// toroidalPlaneWalkVN() - simulation of drunken walk on an toroidal plane using von Neumann neighborhood
-
-	private void toroidalPlaneWalkVN(BufferedImage image, int numSteps) {
-		// fill background with cream color
-		for (int i = 0; i < imgWIDTH; i++) {
-			for (int j = 0; j < imgHEIGHT; j++) {
-				image.setRGB(i, j, CREAM);
-			}
-		}
-
-		int startPosx = imgWIDTH/2;  // define starting x pos
-		int startPosy = imgHEIGHT/2; // define starting y pos
-		int currPosx; // var to store current x pos during walk
-		int currPosy; // var to store current y pos during walk
-
-		Random rand = new Random(); // create new Random object for generating walk sequence
-
-		if (numSteps > 0) { // if numSteps = 0, only the cream background will be displayed
-			image.setRGB(startPosx, startPosy, BLACK);
-			if (numSteps > 1) {
-				currPosx = startPosx; // define current pos
-				currPosy = startPosy; // @ start pos
-				for (int i = 2; i <= numSteps; i++) {
-					int step = rand.nextInt(4); // step ϵ [0,4)
-					switch (step) {
-						case 0: currPosy++; // move down 1 pixel
-								break;
-						case 1: currPosx--; // move left 1 pixel
-								break;
-						case 2: currPosy--; // move up 1 pixel
-								break;
-						case 3: currPosx++; // move right 1 pixel
-								break;
-					}
-
-					// connect top/bottom boundaries 
-					// and left/right boundaries to let drunk
-					// walk freely between
-					if (currPosx == imgWIDTH) {
-						currPosx = 0;
-					}
-					else if (currPosx < 0) {
-						currPosx = imgWIDTH-1;
-					}
-					if (currPosy == imgHEIGHT) {
-						currPosy = 0;
-					}
-					else if (currPosy < 0) {
-						currPosy = imgHEIGHT-1;
-					}
-
-					if (i == numSteps) {
-						// mark the pos where the drunk falls down (last step) with red
-						image.setRGB(currPosx, currPosy, RED);
-					}
-					else {
-						// mark all other steps with black
-						image.setRGB(currPosx, currPosy, BLACK);
-					}
-				}
-			}
-		}
-	}
-
-	// ---------------------------------------------------------
-	// infinitePlaneWalkM() - simulation of drunken walk on an infinite plane using Moore neighborhood
-
-	private void infinitePlaneWalkM(BufferedImage image, int numSteps) {
-		// fill background with cream color
-		for (int i = 0; i < imgWIDTH; i++) {
-			for (int j = 0; j < imgHEIGHT; j++) {
-				image.setRGB(i, j, CREAM);
-			}
-		}
-
-		int startPosx = imgWIDTH/2;  // define starting x pos
-		int startPosy = imgHEIGHT/2; // define starting y pos
-		int currPosx; // var to store current x pos during walk
-		int currPosy; // var to store current y pos during walk
-
-		Random rand = new Random(); // create new Random object for generating walk sequence
-
-		if (numSteps > 0) { // if numSteps = 0, only the cream background will be displayed
-			image.setRGB(startPosx, startPosy, BLACK);
-			if (numSteps > 1) {
-				currPosx = startPosx; // define current pos
-				currPosy = startPosy; // @ start pos
-				for (int i = 2; i <= numSteps; i++) {
-					int step = rand.nextInt(8); // step ϵ [0,8)
-					switch (step) {
-						case 0: currPosy++; // move down 1 pixel
-								break;
-						case 1: currPosx--; // move left 1 pixel
+						case 4: currPosx--; // move left 1 pixel
 								currPosy++; // & down 1 pixel
 								break;
-						case 2: currPosx--; // move left 1 pixel
-								break;
-						case 3: currPosx--; // move left 1 pixel
-								currPosy--; // & up 1 pixel
-								break;
-						case 4:	currPosy--; // move up 1 pixel
-								break;
-						case 5: currPosx++; // move right 1 pixel
+						case 5: currPosx--; // move left 1 pixel
 								currPosy--; // & up 1 pixel
 								break;
 						case 6: currPosx++; // move right 1 pixel
+								currPosy--; // & up 1 pixel
 								break;
 						case 7: currPosx++; // move right 1 pixel
 								currPosy++; // & down 1 pixel
+								break;								
 					}
-
-					// let the drunk walk outside/through the boundaries,
-					// but only mark steps made inside the 401 x 401 window
-					if ((currPosx >= 0) && (currPosx < imgWIDTH)) {
-						if ((currPosy >= 0) && (currPosy < imgHEIGHT)) {
-							if (i == numSteps) {
-								// mark the pos where the drunk falls down (last step) with red
-								image.setRGB(currPosx, currPosy, RED);
-							}
-							else {
-								// mark all other steps with black
-								image.setRGB(currPosx, currPosy, BLACK);
-							}							
-						}	
-					}
-				}
-			}
-		}
-	}
-
-	// ---------------------------------------------------------
-	// boundedPlaneWalkM() - simulation of drunken walk on a bounded plane using Moore neighborhood
-
-	private void boundedPlaneWalkM(BufferedImage image, int numSteps) {
-		// fill background with cream color
-		for (int i = 0; i < imgWIDTH; i++) {
-			for (int j = 0; j < imgHEIGHT; j++) {
-				image.setRGB(i, j, CREAM);
-			}
-		}
-
-		int startPosx = imgWIDTH/2;  // define starting x pos
-		int startPosy = imgHEIGHT/2; // define starting y pos
-		int currPosx; // var to store current x pos during walk
-		int currPosy; // var to store current y pos during walk
-
-		Random rand = new Random(); // create new Random object for generating walk sequence
-
-		if (numSteps > 0) { // if numSteps = 0, only the cream background will be displayed
-			image.setRGB(startPosx, startPosy, BLACK);
-			if (numSteps > 1) {
-				currPosx = startPosx; // define current pos
-				currPosy = startPosy; // @ start pos
-				for (int i = 2; i <= numSteps; i++) {
-					int step = rand.nextInt(8); // step ϵ [0,8)
-					switch (step) {
-						case 0: currPosy++; // move down 1 pixel
+					switch (topology) {
+						case 0: // infinite plane - 
+								// let the drunk walk outside/through the boundaries,
+								// but only mark steps made inside the 401 x 401 window
+								if ((currPosx >= 0) && (currPosx < imgWIDTH)) {
+									if ((currPosy >= 0) && (currPosy < imgHEIGHT)) {
+										image.setRGB(currPosx, currPosy, stepColor);							
+									}	
+								}							
 								break;
-						case 1: currPosx--; // move left 1 pixel
-								currPosy++; // & down 1 pixel
+						case 1: // bounded plane -
+								// don't let the drunk walk outside/through the boundaries
+								// instead, make him "bounce off the walls" 
+								if (currPosx == imgWIDTH) {
+									currPosx = imgWIDTH-1;
+								}
+								else if (currPosx < 0) {
+									currPosx = 0;
+								}
+								if (currPosy == imgHEIGHT) {
+									currPosy = imgHEIGHT-1;
+								}
+								else if (currPosy < 0) {
+									currPosy = 0;
+								}
+								image.setRGB(currPosx, currPosy, stepColor);							
 								break;
-						case 2: currPosx--; // move left 1 pixel
-								break;
-						case 3: currPosx--; // move left 1 pixel
-								currPosy--; // & up 1 pixel
-								break;
-						case 4:	currPosy--; // move up 1 pixel
-								break;
-						case 5: currPosx++; // move right 1 pixel
-								currPosy--; // & up 1 pixel
-								break;
-						case 6: currPosx++; // move right 1 pixel
-								break;
-						case 7: currPosx++; // move right 1 pixel
-								currPosy++; // & down 1 pixel
-					}
-
-					// don't let the drunk walk outside/through the boundaries
-					// instead, make him "bounce off the walls"
-					if (currPosx == imgWIDTH) {
-						currPosx = imgWIDTH-1;
-					}
-					else if (currPosx < 0) {
-						currPosx = 0;
-					}
-					if (currPosy == imgHEIGHT) {
-						currPosy = imgHEIGHT-1;
-					}
-					else if (currPosy < 0) {
-						currPosy = 0;
-					}
-
-					if (i == numSteps) {
-						// mark the pos where the drunk falls down (last step) with red
-						image.setRGB(currPosx, currPosy, RED);
-					}
-					else {
-						// mark all other steps with black
-						image.setRGB(currPosx, currPosy, BLACK);
-					}
-				}
-			}
-		}
-	}
-
-	// ---------------------------------------------------------
-	// toroidalPlaneWalkM() - simulation of drunken walk on an toroidal plane using Moore neighborhood
-
-	private void toroidalPlaneWalkM(BufferedImage image, int numSteps) {
-		// fill background with cream color
-		for (int i = 0; i < imgWIDTH; i++) {
-			for (int j = 0; j < imgHEIGHT; j++) {
-				image.setRGB(i, j, CREAM);
-			}
-		}
-
-		int startPosx = imgWIDTH/2;  // define starting x pos
-		int startPosy = imgHEIGHT/2; // define starting y pos
-		int currPosx; // var to store current x pos during walk
-		int currPosy; // var to store current y pos during walk
-
-		Random rand = new Random(); // create new Random object for generating walk sequence
-
-		if (numSteps > 0) { // if numSteps = 0, only the cream background will be displayed
-			image.setRGB(startPosx, startPosy, BLACK);
-			if (numSteps > 1) {
-				currPosx = startPosx; // define current pos
-				currPosy = startPosy; // @ start pos
-				for (int i = 2; i <= numSteps; i++) {
-					int step = rand.nextInt(8); // step ϵ [0,8)
-					switch (step) {
-						case 0: currPosy++; // move down 1 pixel
-								break;
-						case 1: currPosx--; // move left 1 pixel
-								currPosy++; // & down 1 pixel
-								break;
-						case 2: currPosx--; // move left 1 pixel
-								break;
-						case 3: currPosx--; // move left 1 pixel
-								currPosy--; // & up 1 pixel
-								break;
-						case 4:	currPosy--; // move up 1 pixel
-								break;
-						case 5: currPosx++; // move right 1 pixel
-								currPosy--; // & up 1 pixel
-								break;
-						case 6: currPosx++; // move right 1 pixel
-								break;
-						case 7: currPosx++; // move right 1 pixel
-								currPosy++; // & down 1 pixel
-					}
-
-					// connect top/bottom boundaries  and
-					// left/right boundaries to let drunk
-					// walk freely between
-					if (currPosx == imgWIDTH) {
-						currPosx = 0;
-					}
-					else if (currPosx < 0) {
-						currPosx = imgWIDTH-1;
-					}
-					if (currPosy == imgHEIGHT) {
-						currPosy = 0;
-					}
-					else if (currPosy < 0) {
-						currPosy = imgHEIGHT-1;
-					}
-
-					if (i == numSteps) {
-						// mark the pos where the drunk falls down (last step) with red
-						image.setRGB(currPosx, currPosy, RED);
-					}
-					else {
-						// mark all other steps with black
-						image.setRGB(currPosx, currPosy, BLACK);
+						case 2: // toroidal plane -
+								// connect top/bottom boundaries and left/right 
+								// boundaries to let drunk walk freely between; 
+								// note: opposite corners are connected as a result
+								if (currPosx == imgWIDTH) {
+									currPosx = 0;
+								}
+								else if (currPosx < 0) {
+									currPosx = imgWIDTH-1;
+								}
+								if (currPosy == imgHEIGHT) {
+									currPosy = 0;
+								}
+								else if (currPosy < 0) {
+									currPosy = imgHEIGHT-1;
+								}
+								image.setRGB(currPosx, currPosy, stepColor);							
+								break;																
 					}
 				}
 			}
