@@ -20,7 +20,7 @@ public class BilinearGradient {
 	}
 }
 
-//###########################################################################
+//##########################################################################
 
 class ImageFrame extends JFrame {
 	// name colors by their positions so variable names still make sense when new colors are tested
