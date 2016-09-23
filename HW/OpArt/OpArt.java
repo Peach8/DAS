@@ -149,6 +149,10 @@ class ImageFrame extends JFrame {
 			// don't allow negative input
 			JOptionPane.showMessageDialog(this, "Input must be non-negative.", "Input must be non-negative.", JOptionPane.ERROR_MESSAGE);
 		}
+		if (diam > this.tgtSize) {
+			// don't allow a minimum circle diameter greater than the target image width/height
+			JOptionPane.showMessageDialog(this, "Input cannot exceed image size.", "Input cannot exceed image size.", JOptionPane.ERROR_MESSAGE);
+		}		
 		return diam;
 	}
 
@@ -196,7 +200,7 @@ class ImageFrame extends JFrame {
 		g2D.setColor(getAvgColor((int) x, (int) y, (int) (width/2.0)));
 		circle.setFrame(x, y, width/2.0, width/2.0);
 		g2D.fill(this.circle);
-		if ((int) width >= this.diameter) {
+		if ((int) (width/2.0) >= this.diameter) {
 			fillQuadrants(g2D, x, y, width/2.0);
 		}		
 
@@ -204,7 +208,7 @@ class ImageFrame extends JFrame {
 		g2D.setColor(getAvgColor((int) (x + width/2.0), (int) y, (int) (width/2.0)));
 		circle.setFrame(x + width/2.0, y, width/2.0, width/2.0);
 		g2D.fill(this.circle);
-		if ((int) width >= this.diameter) {
+		if ((int) (width/2.0) >= this.diameter) {
 			fillQuadrants(g2D, x + width/2.0, y, width/2.0);
 		}
 
@@ -212,7 +216,7 @@ class ImageFrame extends JFrame {
 		g2D.setColor(getAvgColor((int) x, (int) (y + width/2.0), (int) (width/2.0)));
 		circle.setFrame(x, y + width/2.0, width/2.0, width/2.0);
 		g2D.fill(this.circle);
-		if ((int) width >= this.diameter) {
+		if ((int) (width/2.0) >= this.diameter) {
 			fillQuadrants(g2D, x, y + width/2.0, width/2.0);
 		}
 
@@ -220,7 +224,7 @@ class ImageFrame extends JFrame {
 		g2D.setColor(getAvgColor((int) (x + width/2.0), (int) (y + width/2.0), (int) (width/2.0)));
 		circle.setFrame(x + width/2.0, y + width/2.0, width/2.0, width/2.0);
 		g2D.fill(this.circle);
-		if ((int) width >= this.diameter) {
+		if ((int) (width/2.0) >= this.diameter) {
 			fillQuadrants(g2D, x + width/2.0, y + width/2.0, width/2.0);
 		}
 	}
