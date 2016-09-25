@@ -11,7 +11,7 @@ import javax.imageio.*;
 import javax.swing.*;
 import java.util.Random;
 
-public class DirectedRandomWalkPlants_multistem {
+public class DirectedRandomWalkPlants {
 	private static final int frameWIDTH  = 650; // ImageFrame width
 	private static final int frameHEIGHT = 650; // ImageFrame height
 
@@ -164,7 +164,7 @@ class ImageFrame extends JFrame {
 		double reflProb = 1 - this.transmProb; // reflection probability
 		int direction = 1; // +1 = left; -1 = right
 
-		double bias, prevAngle, prevRho, prevX, prevY;
+		double bias, prevX, prevY;
 		int i;
 		while (this.numStems > 0) {
 			angle = Math.PI/2.0; // initial angle (stem starts growing "upwards")
@@ -178,9 +178,6 @@ class ImageFrame extends JFrame {
 			prevY = y - rho*Math.sin(angle);
 
 			for (i = 0; i < this.stepsPerStem; i++) {
-				prevAngle = angle;
-				prevRho = rho;
-
 				// determine new bias
 				if (direction == -1) {
 					bias = this.transmProb;
@@ -196,8 +193,8 @@ class ImageFrame extends JFrame {
 					direction = -1; // right
 				}
 				// calculate end position of next line to draw
-				rho = prevRho + this.growthIncPerStep;
-				angle = prevAngle + (this.maxRotIncPerStep * rand.nextFloat() * direction);
+				rho = rho + this.growthIncPerStep;
+				angle = angle + (this.maxRotIncPerStep * rand.nextFloat() * direction);
 
 				stemSegment.setLine(prevX, prevY, prevX + rho*Math.cos(angle), prevY - rho*Math.sin(angle));
 				g2D.draw(stemSegment);
