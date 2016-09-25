@@ -1,4 +1,4 @@
-// DirectedRandomWalkPlants.java -
+// DirectedRandomWalkPlants.java - based on an algorithm in Clifford Pickover's "Computers, Pattern, Chaos, and Beauty"
 //
 // by Brandon Peterson
 
@@ -11,9 +11,9 @@ import javax.imageio.*;
 import javax.swing.*;
 import java.util.Random;
 
-public class DirectedRandomWalkPlants {
-	private static final int frameWIDTH  = 400; // ImageFrame width
-	private static final int frameHEIGHT = 400; // ImageFrame height
+public class DirectedRandomWalkPlants_multistem {
+	private static final int frameWIDTH  = 650; // ImageFrame width
+	private static final int frameHEIGHT = 650; // ImageFrame height
 
 	public static void main(String[] args) {
 		JFrame frame = new ImageFrame(frameWIDTH, frameHEIGHT); // create ImageFrame
@@ -68,16 +68,18 @@ class ImageFrame extends JFrame {
 					maxRotIncPerStep = promptUserForFloat("Enter the desired maximum rotation increment.");
 					growthIncPerStep = promptUserForInt("Enter the desired growth segment increment.");
 
+					// create new image and Graphics2D 
 					img = new BufferedImage(imgSize, imgSize, BufferedImage.TYPE_INT_ARGB);
 					g2D = (Graphics2D) img.createGraphics();
 					
+					// set background white
 					g2D.setColor(Color.WHITE);
-					setBackground(img);
+					setBackground();
 
-					g2D.setColor(Color.BLACK);
-					DRWP_SingleStem(img);
+					g2D.setColor(Color.BLACK); // draw black stems
+					DRWP(); // directed random walk plants algorithm 
 
-					displayBufferedImage(img);
+					displayBufferedImage(img); // display final image
 				}
 			}	);
 		fileMenu.add(drwpItem);
@@ -144,57 +146,66 @@ class ImageFrame extends JFrame {
 	// setBackground() - fill entire image with rectangle of specified color
 	// 	params: BufferedImage image = image to change background color of
 	//          int color = desired background color
-	private void setBackground(BufferedImage image) {
-		this.g2D.fillRect(0,0, image.getWidth(), image.getHeight());
+	private void setBackground() {
+		this.g2D.fillRect(0,0, this.imgSize, this.imgSize);
 	}
 
-	private void DRWP_SingleStem(BufferedImage image) {
-		double angle = Math.PI/2; // initial angle (stem starts growing "upwards")
-		double rho = 1.0; // initial growth segment length; then becomes 
+	private void DRWP() {
+		double angle; // angle of stem growth in radians
+		double rho; // growth segment length
 		
 		// grow from point (x,y)
 		double x = this.imgSize/2.0; 
 		double y = x;
 
-		// create line obj for initial segment (obj will be resued for additional segments)
-		Line2D.Double stemSegment = new Line2D.Double(x, y, x + rho*Math.cos(angle), y - rho*Math.sin(angle));
-		g2D.draw(stemSegment);
+		// create line obj used to draw stem segments
+		Line2D.Double stemSegment = new Line2D.Double();
 
 		double reflProb = 1 - this.transmProb; // reflection probability
 		int direction = 1; // +1 = left; -1 = right
 
-		double bias, prevAngle, prevRho;
-		double prevX = x + rho*Math.cos(angle);
-		double prevY = y - rho*Math.sin(angle);
-		while (this.stepsPerStem > 0) {
-			prevAngle = angle;
-			prevRho = rho;
+		double bias, prevAngle, prevRho, prevX, prevY;
+		int i;
+		while (this.numStems > 0) {
+			angle = Math.PI/2.0; // initial angle (stem starts growing "upwards")
+			rho = 1.0; // initial growth segment length
 
-			// determine new bias
-			if (direction == -1) {
-				bias = this.transmProb;
-			}
-			else {
-				bias = reflProb;
-			}
-			// use bias to determine next direction
-			if (rand.nextFloat() > bias) {
-				direction = 1;
-			}
-			else {
-				direction = -1;
-			}
-			// calculate end position of next line to draw
-			rho = prevRho + this.growthIncPerStep;
-			angle = prevAngle + (this.maxRotIncPerStep * rand.nextFloat() * direction);
-
-			stemSegment.setLine(prevX, prevY, prevX + rho*Math.cos(angle), prevY - rho*Math.sin(angle));
+			// draw the initial segment
+			stemSegment.setLine(x, y, x + rho*Math.cos(angle), y - rho*Math.sin(angle));
 			g2D.draw(stemSegment);
 
-			prevX = prevX + rho*Math.cos(angle);
-			prevY = prevY - rho*Math.sin(angle);
+			prevX = x + rho*Math.cos(angle);
+			prevY = y - rho*Math.sin(angle);
 
-			this.stepsPerStem--;
+			for (i = 0; i < this.stepsPerStem; i++) {
+				prevAngle = angle;
+				prevRho = rho;
+
+				// determine new bias
+				if (direction == -1) {
+					bias = this.transmProb;
+				}
+				else {
+					bias = reflProb;
+				}
+				// use bias to determine next direction
+				if (rand.nextFloat() > bias) {
+					direction = 1; // left
+				}
+				else {
+					direction = -1; // right
+				}
+				// calculate end position of next line to draw
+				rho = prevRho + this.growthIncPerStep;
+				angle = prevAngle + (this.maxRotIncPerStep * rand.nextFloat() * direction);
+
+				stemSegment.setLine(prevX, prevY, prevX + rho*Math.cos(angle), prevY - rho*Math.sin(angle));
+				g2D.draw(stemSegment);
+
+				prevX = prevX + rho*Math.cos(angle);
+				prevY = prevY - rho*Math.sin(angle);
+			}
+			this.numStems--;
 		}
 	}
 
