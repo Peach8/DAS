@@ -15,7 +15,16 @@ public class DirectedRandomWalkPlants {
 	private static final int frameWIDTH  = 650; // ImageFrame width
 	private static final int frameHEIGHT = 650; // ImageFrame height
 
+	// make sure EDT handles display of GUI
 	public static void main(String[] args) {
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run() {
+				createAndShowGUI();
+			}
+		}	);
+	}
+
+	public static void createAndShowGUI() {
 		JFrame frame = new ImageFrame(frameWIDTH, frameHEIGHT); // create ImageFrame
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // close widget quits app (doesn't just hide)
 		frame.setVisible(true); // make frame visible
@@ -54,7 +63,7 @@ class ImageFrame extends JFrame {
 		this.rand = new Random(); // create new Random object for generating walk sequence
 
 		this.hint = new RenderingHints(RenderingHints.KEY_ANTIALIASING, 
-			                           RenderingHints.VALUE_ANTIALIAS_OFF);
+			                           RenderingHints.VALUE_ANTIALIAS_ON);
 
 		// setup the frame's attributes
 		this.setTitle("CAP 3027 2016 - HW05a - Brandon Peterson");
@@ -69,8 +78,7 @@ class ImageFrame extends JFrame {
 
 		// --- Set colors
 		JMenuItem setColorsItem = new JMenuItem("Set colors");
-		setColorsItem.addActionListener(new ActionListener()
-			{
+		setColorsItem.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent event) {
 					// prompt user for stem and tip colors
 					stemColor = promptUserForColor("Enter the desired hex RGB value for the plant stem color.");
@@ -84,8 +92,7 @@ class ImageFrame extends JFrame {
 
 		// --- Load source image
 		JMenuItem drwpItem = new JMenuItem("Directed random walk plant");
-		drwpItem.addActionListener(new ActionListener()
-			{
+		drwpItem.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent event) {
 					// prompt user for input to assign imgSize, numSeeds, numParticles, maxNumSteps
 					imgSize = promptUserForInt("Enter the desired image size n (for an nxn image).");
@@ -101,23 +108,20 @@ class ImageFrame extends JFrame {
 					// create new image and Graphics2D 
 					img = new BufferedImage(imgSize, imgSize, BufferedImage.TYPE_INT_ARGB);
 					g2D = (Graphics2D) img.createGraphics();
-					g2D.setRenderingHints(hint); // 
+					g2D.setRenderingHints(hint);
 					
 					// set background black
-					g2D.setColor(Color.BLACK);
-					setBackground();
+					clearBackground();
 
 					DRWP(); // directed random walk plants algorithm 
-
-					displayBufferedImage(img); // display final image
+					displayBufferedImage(img);
 				}
 			}	);
 		fileMenu.add(drwpItem);
 
 		// --- Exit
 		JMenuItem exitItem = new JMenuItem("Exit");
-		exitItem.addActionListener(new ActionListener()
-			{
+		exitItem.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent event) {
 					System.exit(0);
 				}
@@ -140,7 +144,6 @@ class ImageFrame extends JFrame {
 
 		try {
 			val = (int) Long.parseLong(hexStr.substring(2, hexStr.length()), 16); // convert input string to int form
-			System.out.println(val);
 		}
 		catch (NumberFormatException exception) {
 			JOptionPane.showMessageDialog(this, exception); // throw exception
@@ -170,7 +173,6 @@ class ImageFrame extends JFrame {
 		}	
 		return val;
 	}
-
 
 	// -------------------------------------------------------------------------------
 	// promptUserForFloat() - throw exception/error if input is not float in [0.0,1.0]
@@ -256,80 +258,133 @@ class ImageFrame extends JFrame {
 	// synthColor() - synthesize int color given indivual RGB int channels;
 	//                define full alpha channel
 	private int synthColor(double red, double green, double blue) {
-		return (0xFF000000 | ((int) red << 16) | ((int) green << 8 ) | (int) blue);		
+		int result = (0xFF000000 | ((int) red << 16) | ((int) green << 8 ) | (int) blue);	
+		return result;
 	}	
 
 	// ---------------------------------------------------------------------
-	// setBackground() - fill entire image with rectangle of specified color
-	// 	Note: desired background color should be set prior to calling this method
-	private void setBackground() {
+	// clearBackground() - fill entire image with black rectangle
+	private void clearBackground() {
+		g2D.setColor(Color.BLACK);
 		this.g2D.fillRect(0,0, this.imgSize, this.imgSize);
 	}
+
+	// // template
+	// private void doLongJob() {
+	// 	new Thread(new Runnable() { 
+	// 		public void run() { // defines what worker thread does
+	// 			final BufferedImage image = createFrame();
+
+	// 			// ask EDT to display image:
+	// 			// create task (Runnable) and add that task to
+	// 			// EDT's event queue
+	// 			SwingUtilities.invokeLater(new Runnable() { 
+	// 				public void run() { // defines what EDT should do
+	// 					displayBufferedImage(image);
+	// 				}
+	// 			}	);
+	// 		}
+	// 	}).start();
+	// }
 
 	// -----------------------------------------------
 	// DRWP() - Directed Randown Walk Plants algorithm
 	private void DRWP() {
-		double angle; // angle of stem growth in radians
-		double rho; // growth segment length
-		
-		// grow from point (x,y)
-		double x = this.imgSize/2.0; 
-		double y = x;
+		int i,j,k; // loop counters
+		// create arrays to store polar coordinate components of stem segments
+		double angles[][] = new double[this.stepsPerStem+1][this.numStems];
+		double radii[][] = new double[this.stepsPerStem+1][this.numStems];
+		for (i = 0; i < this.numStems; i++) {
+			angles[0][i] = Math.PI/2.0; // initial angles (stems start growing "upwards")
+			radii[0][i] = 1.0; // initial segment length
+		}
+
+		// create arrays to store start/end coordinates for each stem's segments
+		double xCoords[][] = new double[this.stepsPerStem+1][this.numStems];
+		double yCoords[][] = new double[this.stepsPerStem+1][this.numStems];
+		for (i = 0; i < this.numStems; i++) {
+			// add starting coordinates for each stem
+			xCoords[0][i] = this.imgSize/2.0;
+			yCoords[0][i] = this.imgSize/2.0;
+		}
+
+		// create arrays to store previous coordinate defined in each stem
+		double prevX[] = new double[this.numStems];
+		double prevY[] = new double[this.numStems];
+		for (i = 0; i < this.numStems; i++) {
+			prevX[i] = xCoords[0][i];
+			prevY[i] = yCoords[0][i];
+		}
 
 		// create line obj used to draw stem segments
 		Line2D.Double stemSegment = new Line2D.Double();
 
 		double reflProb = 1 - this.transmProb; // reflection probability
-		int direction = 1; // +1 = left; -1 = right
 
-		double bias, prevX, prevY;
-		int i;
-		while (this.numStems > 0) {
-			angle = Math.PI/2.0; // initial angle (stem starts growing "upwards")
-			rho = 1.0; // initial growth segment length
+		// create array to store growth directions of each stem
+		int direction[] = new int[this.numStems];
+		// initialize all stems growing left
+		for (i = 0; i < this.numStems; i++) {
+			direction[i] = 1; // +1 = left; -1 = right
+		}
 
-			// define new line color and stroke from arrays of interpolated values
-			g2D.setColor(new Color(this.colors[0]));
-			g2D.setStroke(this.strokes[0]);
-			// draw the initial segment
-			stemSegment.setLine(x, y, x + rho*Math.cos(angle), y - rho*Math.sin(angle));
+		// draw initial segments to start growth "upwards" but don't display in animation
+		g2D.setColor(new Color(this.colors[0]));
+		g2D.setStroke(this.strokes[0]);
+		for (i = 0; i < this.numStems; i++) {
+			stemSegment.setLine(xCoords[0][i], yCoords[0][i], xCoords[0][i] + radii[0][i]*Math.cos(angles[0][i]), yCoords[0][i] - radii[0][i]*Math.sin(angles[0][i]));
 			g2D.draw(stemSegment);
+		}
 
+		// create array to store a different bias for each stem (used in random walk algorithm)
+		double bias[] = new double[this.numStems];
+
+		for (i = 0; i < this.stepsPerStem; i++) {
 			// define "new" previous position
-			prevX = x + rho*Math.cos(angle);
-			prevY = y - rho*Math.sin(angle);
+			for (j = 0; j < this.numStems; j++)  {
+				prevX[j] = prevX[j] + radii[i][j]*Math.cos(angles[i][j]);
+				prevY[j] = prevY[j] - radii[i][j]*Math.sin(angles[i][j]);
+			}
+		
+			// add each new coordinate to each stem's coordinate arrays
+			for (j = 0; j < this.numStems; j++) {
+				xCoords[i+1][j] = prevX[j];
+				yCoords[i+1][j] = prevY[j];
+			}
 
-			for (i = 0; i < this.stepsPerStem; i++) {
+			// draw each stem's new growth (starting at beginning)
+			for (j = 0; j < i+1; j++) {
+				for (k = 0; k < this.numStems; k++) {
+					// define new line color and stroke from arrays of interpolated values
+					g2D.setColor(new Color(this.colors[j]));
+					g2D.setStroke(this.strokes[j]);				
+					// draw new segment from end of previous segment to newly calculated end position
+					stemSegment.setLine(xCoords[j+1][k], yCoords[j+1][k], xCoords[j+1][k] + radii[j+1][k]*Math.cos(angles[j+1][k]), yCoords[j+1][k] - radii[j+1][k]*Math.sin(angles[j+1][k]));
+					g2D.draw(stemSegment);
+				}
+			}
+
+			/* COMPUTE END COORDINATES OF NEXT SEGMENTS (for each stem) */
+			for (j = 0; j < this.numStems; j++) {
 				// determine new bias
-				if (direction == -1) {
-					bias = this.transmProb;
+				if (direction[j] == -1) {
+					bias[j] = this.transmProb;
 				}
 				else {
-					bias = reflProb;
+					bias[j] = reflProb;
 				}
 				// use bias to determine next direction
-				if (rand.nextFloat() > bias) {
-					direction = 1; // left
+				if (rand.nextFloat() > bias[j]) {
+					direction[j] = 1; // left
 				}
 				else {
-					direction = -1; // right
+					direction[j] = -1; // right
 				}
 				// calculate end position of next line to draw
-				rho = rho + this.growthIncPerStep;
-				angle = angle + (this.maxRotIncPerStep * rand.nextFloat() * direction);
-
-				// define new line color and stroke from arrays of interpolated values
-				g2D.setColor(new Color(this.colors[i]));
-				g2D.setStroke(this.strokes[i]);				
-				// draw new segment from end of previous segment to newly calculated end position
-				stemSegment.setLine(prevX, prevY, prevX + rho*Math.cos(angle), prevY - rho*Math.sin(angle));
-				g2D.draw(stemSegment);
-
-				// define "new" previous position
-				prevX = prevX + rho*Math.cos(angle);
-				prevY = prevY - rho*Math.sin(angle);
+				radii[i+1][j] = radii[i][j] + this.growthIncPerStep;
+				angles[i+1][j] = angles[i][j] + (this.maxRotIncPerStep * rand.nextFloat() * direction[j]);
 			}
-			this.numStems--;
+			/* --------------------------------------- */
 		}
 	}
 
